@@ -1,4 +1,3 @@
-
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UIS = game:GetService("UserInputService")
@@ -134,7 +133,7 @@ end
 local function buildMenu()
     clearMenu()
     local x, y = menuX, menuY
-    menuRect(Vector2.new(260, 360), Vector2.new(x, y), Color3.fromRGB(20, 20, 28))
+    menuRect(Vector2.new(260, 340), Vector2.new(x, y), Color3.fromRGB(20, 20, 28))
     menuRect(Vector2.new(260, 36), Vector2.new(x, y), Color3.fromRGB(30, 30, 42))
     menuText("MMV / MM2 Hub", Vector2.new(x + 12, y + 10), 16, Color3.fromRGB(100, 200, 255))
     menuText("Drag: Hold E + Move Mouse", Vector2.new(x + 12, y + 22), 10, Color3.fromRGB(80, 80, 100))
@@ -284,4 +283,95 @@ local function scanPlayers()
             end
         end
     end
-    for player, _ in
+    for player, _ in pairs(espDrawings) do
+        if not player.Parent then
+            removeESP(player)
+        end
+    end
+end
+
+UIS.InputBegan:Connect(function(input, gpe)
+    if gpe then return end
+    if input.KeyCode == Enum.KeyCode.F1 then
+        menuOpen = not menuOpen
+        if menuOpen then buildMenu() else clearMenu() end
+    elseif input.KeyCode == Enum.KeyCode.One then
+        espEnabled = not espEnabled
+        if menuOpen then buildMenu() end
+    elseif input.KeyCode == Enum.KeyCode.Three then
+        lowGfxEnabled = not lowGfxEnabled
+        if lowGfxEnabled then
+            settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+            pcall(function()
+                for _, v in pairs(workspace:GetDescendants()) do
+                    if v:IsA("BasePart") then
+                        v.Material = Enum.Material.Plastic
+                        v.Reflectance = 0
+                    elseif v:IsA("Decal") or v:IsA("Texture") then
+                        v.Transparency = 1
+                    elseif v:IsA("ParticleEmitter") or v:IsA("Trail") then
+                        v.Enabled = false
+                    end
+                end
+            end)
+        else
+            settings().Rendering.QualityLevel = Enum.QualityLevel.Automatic
+        end
+        if menuOpen then buildMenu() end
+    elseif input.KeyCode == Enum.KeyCode.Four then
+        antiFlingEnabled = not antiFlingEnabled
+        if menuOpen then buildMenu() end
+    elseif input.KeyCode == Enum.KeyCode.Five then
+        roleESP = not roleESP
+        if menuOpen then buildMenu() end
+    elseif input.KeyCode == Enum.KeyCode.Six then
+        pcall(function()
+            LocalPlayer.Character:FindFirstChildOfClass("Humanoid").Health = 0
+        end)
+    elseif input.KeyCode == Enum.KeyCode.E then
+        dragging = true
+        dragStart = getMouse()
+    end
+end)
+
+UIS.InputEnded:Connect(function(input, gpe)
+    if input.KeyCode == Enum.KeyCode.E then
+        dragging = false
+    end
+end)
+
+local scanTimer = 0
+
+RunService.RenderStepped:Connect(function(dt)
+    if dragging then
+        local mouse = getMouse()
+        menuX = menuX + (mouse.X - dragStart.X)
+        menuY = menuY + (mouse.Y - dragStart.Y)
+        dragStart = mouse
+        if menuOpen then buildMenu() end
+    end
+    scanTimer = scanTimer + dt
+    if scanTimer > 2 then
+        scanTimer = 0
+        scanPlayers()
+    end
+    updateESP()
+    if antiFlingEnabled then
+        pcall(function()
+            local char = LocalPlayer.Character
+            local root = char and char:FindFirstChild("HumanoidRootPart")
+            if root then
+                root.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+                root.AssemblyLinearVelocity = Vector3.new(
+                    root.AssemblyLinearVelocity.X,
+                    math.clamp(root.AssemblyLinearVelocity.Y, -50, 50),
+                    root.AssemblyLinearVelocity.Z
+                )
+            end
+        end)
+    end
+end)
+
+buildMenu()
+print("[MMV Hub] Loaded!")
+print("F1=Menu 1=ESP 3=GFX 4=AntiFling 5=RoleESP 6=Reset E+Mouse=Drag")
