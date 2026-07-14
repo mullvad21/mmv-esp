@@ -1,55 +1,39 @@
-print("Step 1: Script running")
 print("PlaceId:", game.PlaceId)
 
-local ok1, Players = pcall(function() return game:GetService("Players") end)
-print("Step 2: Players:", ok1, Players)
-
-local ok2, LocalPlayer = pcall(function() return Players.LocalPlayer end)
-print("Step 3: LocalPlayer:", ok2, LocalPlayer)
-
-local ok3, CoreGui = pcall(function() return game:GetService("CoreGui") end)
-print("Step 4: CoreGui:", ok3, CoreGui)
-
-local ok4, RS = pcall(function() return game:GetService("RunService") end)
-print("Step 5: RunService:", ok4, RS)
-
-local ok5, IS = pcall(function() return game:GetService("InsertService") end)
-print("Step 6: InsertService:", ok5, IS)
-
-print("Step 7: MM2 check:", game.PlaceId == 952302020)
-print("Step 8: MMV check:", game.PlaceId == 121330469999373)
-
-local ok6, gui = pcall(function()
-    local g = Instance.new("ScreenGui")
-    g.Name = "TestGUI"
-    g.Parent = CoreGui
-    return g
+pcall(function()
+    local info = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId)
+    print("GameName:", info.Name)
 end)
-print("Step 9: ScreenGui:", ok6, gui)
 
-if ok6 and gui then
-    local ok7, frame = pcall(function()
-        local f = Instance.new("Frame")
-        f.Size = UDim2.new(0, 200, 0, 100)
-        f.Position = UDim2.new(0.5, -100, 0.5, -50)
-        f.BackgroundColor3 = Color3.new(0, 0, 0)
-        f.Parent = gui
-        return f
-    end)
-    print("Step 10: Frame:", ok7, frame)
+local Camera = workspace.CurrentCamera
+print("Camera:", Camera)
+print("Camera.CFrame tostring:", tostring(Camera.CFrame))
+print("ViewportSize:", Camera.ViewportSize)
+print("FOV:", Camera.FieldOfView)
 
-    local ok8, label = pcall(function()
-        local l = Instance.new("TextLabel")
-        l.Size = UDim2.new(1, 0, 1, 0)
-        l.BackgroundTransparency = 1
-        l.Text = "IT WORKS!"
-        l.TextColor3 = Color3.new(1, 1, 1)
-        l.TextSize = 30
-        l.Font = Enum.Font.GothamBold
-        l.Parent = frame
-        return l
-    end)
-    print("Step 11: Label:", ok8, label)
-end
+local ok1, r1 = pcall(function() return Camera:WorldToViewportPoint(Vector3.new(0,10,0)) end)
+print("WorldToViewport:", ok1, tostring(r1))
 
-print("Step 12: Done!")
+local ok2, r2 = pcall(function() return Camera.CFrame.Position end)
+print("CFrame.Position:", ok2, tostring(r2))
+
+local box = Drawing.new("Square")
+box.Size = Vector2.new(200, 200)
+box.Position = Vector2.new(300, 300)
+box.Thickness = 2
+box.Color = Color3.new(0, 255, 0)
+box.Visible = true
+print("Green square drawn")
+task.wait(3)
+box:Remove()
+
+local t = Drawing.new("Text")
+t.Text = "MMV HUB LOADED"
+t.Position = Vector2.new(100, 100)
+t.Size = 24
+t.Color = Color3.new(0, 255, 0)
+t.Visible = true
+task.wait(3)
+t:Remove()
+
+print("Done!")
