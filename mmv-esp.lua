@@ -3,33 +3,35 @@ local RunService = game:GetService("RunService")
 local UIS = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
-local menuOpen = false
+local menuOpen = true
 local espEnabled = true
 local espColor = Color3.new(1, 0, 0)
-local antiFlingEnabled = false
+local colorIndex = 1
+local colors = {
+    Color3.new(1, 0, 0),
+    Color3.new(0, 1, 0),
+    Color3.new(0, 0, 1),
+    Color3.new(1, 1, 1),
+}
+local colorNames = {"Red", "Green", "Blue", "White"}
 local lowGfxEnabled = false
-local menuObjects = {}
-local espObjects = {}
-local playerList = {}
+local antiFlingEnabled = false
+local menuDrawings = {}
+local espDrawings = {}
 
 local function getCam()
     local ok, cam = pcall(function() return workspace.CurrentCamera end)
     return ok and cam or nil
 end
 
-local function getMouse()
-    local ok, pos = pcall(function() return UIS:GetMouseLocation() end)
-    return ok and pos or Vector2.new(0, 0)
-end
-
 local function clearMenu()
-    for _, obj in pairs(menuObjects) do
+    for _, obj in pairs(menuDrawings) do
         pcall(function() obj:Remove() end)
     end
-    menuObjects = {}
+    menuDrawings = {}
 end
 
-local function makeText(text, pos, size, color, parent)
+local function menuText(text, pos, size, color)
     local t = Drawing.new("Text")
     t.Text = text
     t.Position = pos
@@ -37,125 +39,54 @@ local function makeText(text, pos, size, color, parent)
     t.Color = color or Color3.new(1, 1, 1)
     t.Outline = true
     t.Visible = true
-    table.insert(menuObjects, t)
+    table.insert(menuDrawings, t)
     return t
 end
 
-local function makeRect(size, pos, color, filled, parent)
+local function menuRect(size, pos, color)
     local r = Drawing.new("Square")
     r.Size = size
     r.Position = pos
     r.Color = color or Color3.new(0.15, 0.15, 0.2)
-    r.Filled = filled ~= false
+    r.Filled = true
     r.Thickness = 1
     r.Visible = true
-    table.insert(menuObjects, r)
+    table.insert(menuDrawings, r)
     return r
 end
 
-local menuX = 20
-local menuY = 80
-local menuW = 260
-local menuH = 380
-local buttons = {}
-
 local function buildMenu()
     clearMenu()
-    buttons = {}
+    local x, y = 20, 80
 
-    makeRect(Vector2.new(menuW, menuH), Vector2.new(menuX, menuY), Color3.fromRGB(20, 20, 28))
-    makeRect(Vector2.new(menuW, 38), Vector2.new(menuX, menuY), Color3.fromRGB(30, 30, 42))
-    makeText("MMV / MM2 Hub", Vector2.new(menuX + 15, menuY + 10), 18, Color3.fromRGB(100, 200, 255))
-    makeText("[F1] Toggle Menu", Vector2.new(menuX + menuW - 120, menuY + 12), 12, Color3.fromRGB(120, 120, 120))
+    menuRect(Vector2.new(260, 300), Vector2.new(x, y), Color3.fromRGB(20, 20, 28))
+    menuRect(Vector2.new(260, 36), Vector2.new(x, y), Color3.fromRGB(30, 30, 42))
 
-    local function addSection(text, y)
-        makeText(text, Vector2.new(menuX + 15, menuY + y), 14, Color3.fromRGB(100, 200, 255))
-        return y + 22
-    end
+    menuText("MMV / MM2 Hub", Vector2.new(x + 12, y + 10), 16, Color3.fromRGB(100, 200, 255))
 
-    local function addButton(text, y, color)
-        local btnRect = makeRect(Vector2.new(menuW - 20, 32), Vector2.new(menuX + 10, menuY + y), color or Color3.fromRGB(40, 40, 52))
-        local btnText = makeText(text, Vector2.new(menuX + 20, menuY + y + 8), 14, Color3.new(1, 1, 1))
-        table.insert(buttons, {
-            rect = btnRect,
-            text = btnText,
-            x = menuX + 10,
-            y = menuY + y,
-            w = menuW - 20,
-            h = 32,
-            label = text,
-        })
-        return y + 38
-    end
+    y = y + 46
+    menuText("--- ESP (Press 1) ---", Vector2.new(x + 12, y), 13, Color3.fromRGB(100, 200, 255))
+    y = y + 20
+    menuText("Status: " .. (espEnabled and "ON" or "OFF"), Vector2.new(x + 12, y), 14, espEnabled and Color3.new(0, 1, 0) or Color3.new(1, 0, 0))
 
-    local y = 48
-    y = addSection("--- ESP ---", y)
-    y = addButton(espEnabled and "ESP: ON" or "ESP: OFF", y, espEnabled and Color3.fromRGB(30, 100, 30) or Color3.fromRGB(100, 30, 30))
+    y = y + 28
+    menuText("--- Color (Press 2) ---", Vector2.new(x + 12, y), 13, Color3.fromRGB(100, 200, 255))
+    y = y + 20
+    menuText("Color: " .. colorNames[colorIndex], Vector2.new(x + 12, y), 14, espColor)
 
-    y = addSection("--- Colors ---", y)
-    y = addButton("Red", y, Color3.fromRGB(130, 30, 30))
-    y = addButton("Green", y, Color3.fromRGB(30, 130, 30))
-    y = addButton("Blue", y, Color3.fromRGB(30, 30, 130))
-    y = addButton("White", y, Color3.fromRGB(130, 130, 130))
+    y = y + 28
+    menuText("--- Low GFX (Press 3) ---", Vector2.new(x + 12, y), 13, Color3.fromRGB(100, 200, 255))
+    y = y + 20
+    menuText("Status: " .. (lowGfxEnabled and "ON" or "OFF"), Vector2.new(x + 12, y), 14, lowGfxEnabled and Color3.new(0, 1, 0) or Color3.new(1, 0.5, 0))
 
-    y = addSection("--- Misc ---", y)
-    y = addButton(lowGfxEnabled and "Low GFX: ON" or "Low GFX: OFF", y, lowGfxEnabled and Color3.fromRGB(30, 120, 30) or Color3.fromRGB(100, 60, 30))
+    y = y + 28
+    menuText("--- Anti-Fling (Press 4) ---", Vector2.new(x + 12, y), 13, Color3.fromRGB(100, 200, 255))
+    y = y + 20
+    menuText("Status: " .. (antiFlingEnabled and "ON" or "OFF"), Vector2.new(x + 12, y), 14, antiFlingEnabled and Color3.new(0, 1, 0) or Color3.new(1, 0.5, 0))
 
-    y = addSection("--- Anti Fling ---", y)
-    y = addButton(antiFlingEnabled and "Anti-Fling: ON" or "Anti-Fling: OFF", y, antiFlingEnabled and Color3.fromRGB(30, 120, 30) or Color3.fromRGB(100, 60, 30))
+    y = y + 32
+    menuText("[F1] Close Menu", Vector2.new(x + 12, y), 12, Color3.fromRGB(120, 120, 120))
 end
-
-local function handleClick(mx, my)
-    for _, btn in pairs(buttons) do
-        if mx >= btn.x and mx <= btn.x + btn.w and my >= btn.y and my <= btn.y + btn.h then
-            local label = btn.label
-
-            if label:find("ESP:") then
-                espEnabled = not espEnabled
-                buildMenu()
-            elseif label == "Red" then
-                espColor = Color3.new(1, 0, 0)
-                buildMenu()
-            elseif label == "Green" then
-                espColor = Color3.new(0, 1, 0)
-                buildMenu()
-            elseif label == "Blue" then
-                espColor = Color3.new(0, 0, 1)
-                buildMenu()
-            elseif label == "White" then
-                espColor = Color3.new(1, 1, 1)
-                buildMenu()
-            elseif label:find("Low GFX") then
-                lowGfxEnabled = not lowGfxEnabled
-                if lowGfxEnabled then
-                    settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
-                    pcall(function()
-                        for _, v in pairs(workspace:GetDescendants()) do
-                            if v:IsA("BasePart") then
-                                v.Material = Enum.Material.Plastic
-                                v.Reflectance = 0
-                            elseif v:IsA("Decal") or v:IsA("Texture") then
-                                v.Transparency = 1
-                            elseif v:IsA("ParticleEmitter") or v:IsA("Trail") then
-                                v.Enabled = false
-                            end
-                        end
-                    end)
-                else
-                    settings().Rendering.QualityLevel = Enum.QualityLevel.Automatic
-                end
-                buildMenu()
-            elseif label:find("Anti-Fling") then
-                antiFlingEnabled = not antiFlingEnabled
-                buildMenu()
-            end
-            return true
-        end
-    end
-    return false
-end
-
-local espDrawings = {}
 
 local function createESP(player)
     if player == LocalPlayer then return end
@@ -270,17 +201,9 @@ local function scanPlayers()
             local player = children[i]
             if player ~= LocalPlayer and not espDrawings[player] then
                 createESP(player)
-                pcall(function()
-                    player.CharacterRemoving:Connect(function()
-                        if espDrawings[player] then hideESP(espDrawings[player]) end
-                    end)
-                end)
             end
         end
     end
-end
-
-local function removePlayerESP()
     for player, _ in pairs(espDrawings) do
         if not player.Parent then
             removeESP(player)
@@ -292,19 +215,38 @@ UIS.InputBegan:Connect(function(input, gpe)
     if gpe then return end
     if input.KeyCode == Enum.KeyCode.F1 then
         menuOpen = not menuOpen
-        if menuOpen then
-            buildMenu()
+        if menuOpen then buildMenu() else clearMenu() end
+    elseif input.KeyCode == Enum.KeyCode.One then
+        espEnabled = not espEnabled
+        if menuOpen then buildMenu() end
+    elseif input.KeyCode == Enum.KeyCode.Two then
+        colorIndex = colorIndex + 1
+        if colorIndex > #colors then colorIndex = 1 end
+        espColor = colors[colorIndex]
+        if menuOpen then buildMenu() end
+    elseif input.KeyCode == Enum.KeyCode.Three then
+        lowGfxEnabled = not lowGfxEnabled
+        if lowGfxEnabled then
+            settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+            pcall(function()
+                for _, v in pairs(workspace:GetDescendants()) do
+                    if v:IsA("BasePart") then
+                        v.Material = Enum.Material.Plastic
+                        v.Reflectance = 0
+                    elseif v:IsA("Decal") or v:IsA("Texture") then
+                        v.Transparency = 1
+                    elseif v:IsA("ParticleEmitter") or v:IsA("Trail") then
+                        v.Enabled = false
+                    end
+                end
+            end)
         else
-            clearMenu()
+            settings().Rendering.QualityLevel = Enum.QualityLevel.Automatic
         end
-    end
-end)
-
-UIS.InputBegan:Connect(function(input, gpe)
-    if gpe then return end
-    if input.UserInputType == Enum.UserInputType.MouseButton1 and menuOpen then
-        local mouse = getMouse()
-        handleClick(mouse.X, mouse.Y)
+        if menuOpen then buildMenu() end
+    elseif input.KeyCode == Enum.KeyCode.Four then
+        antiFlingEnabled = not antiFlingEnabled
+        if menuOpen then buildMenu() end
     end
 end)
 
@@ -315,7 +257,6 @@ RunService.RenderStepped:Connect(function(dt)
     if scanTimer > 2 then
         scanTimer = 0
         scanPlayers()
-        removePlayerESP()
     end
 
     updateESP()
@@ -336,4 +277,5 @@ RunService.RenderStepped:Connect(function(dt)
     end
 end)
 
-print("[MMV Hub] Loaded! Press F1 to open menu")
+buildMenu()
+print("[MMV Hub] Loaded! F1=Menu 1=ESP 2=Color 3=GFX 4=AntiFling")
